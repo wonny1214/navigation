@@ -48,7 +48,7 @@ CChildView::CChildView()
 	MatchID(m_RoadBlock_List7);
 	MatchID(m_RoadBlock_List8);
 
-	ResetNodeData();
+
 }
 
 CChildView::~CChildView()
@@ -110,6 +110,8 @@ void CChildView::OnPaint()
 		DrawRoadLine(m_RoadBlock_List6, dc);
 		DrawRoadLine(m_RoadBlock_List7, dc);
 		DrawRoadLine(m_RoadBlock_List8, dc);
+
+		ResetNodeData();
 
 		//Allign_List_ID(m_Road_List);
 	}
@@ -199,11 +201,6 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 				{
 					m_EndNodeId = (*iter).ID;
 
-					CString message;
-					message.Format(_T("선택된 노드 ID: %d, %d"), m_StartNodeId, m_EndNodeId);
-
-					AfxMessageBox(message);
-
 					break;
 				}
 			}
@@ -220,14 +217,21 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 		double startDistance = distances.at(m_StartNodeId);
 
-		CString message;
-		message.Format(_T("디버그 ID: %d"), startDistance);
-
-		AfxMessageBox(message);
-
 		// 2. 경로 역추적 (Path Reconstruction)
 		// 노드 ID 리스트를 얻습니다.
 		list<int> shortest_node_path = ReconstructPath(m_StartNodeId, m_EndNodeId, prev_nodes);
+
+		auto iter1234 = shortest_node_path.begin();
+
+		while (iter1234 != shortest_node_path.end())
+		{
+			CString message;
+			message.Format(_T("디버그 ID: %d, "), iter1234);
+
+			AfxMessageBox(message);
+
+			iter1234++;
+		}
 
 		shortest_Path_List = ConvertPathToNodeStatusList(shortest_node_path);
 
@@ -291,9 +295,18 @@ void CChildView::DrawRoadBlock(list<m_Node_Status>&list, CPaintDC& dc, int LineW
 	DrawRoadLine(list, dc);
 	
 	CPoint pt[2];
+	int Distance;
+	int NearNetID;
 
 	pt[0] = list.back().C_Building;
 	pt[1] = list.front().C_Building;
+
+	int dx = (int)pt[0].x - (int)pt[1].x;
+	int dy = (int)pt[0].y - (int)pt[1].y;
+
+	Distance = (int)(sqrt((dx * dx) + (dy * dy)));
+
+	m_Road_List.push_back({ {list.back().ID, list.front().ID}, (double)Distance });
 
 	dc.Polyline(pt, 2);
 }
@@ -480,6 +493,7 @@ void CChildView::MatchID(list<m_Node_Status> list)			//ID를 바꿀 리스트를
 
 void CChildView::ResetNodeData()
 {
+
 	// m_Net_Data_Map은 std::map<int, std::list<m_Net_Data>> 타입의 멤버 변수라고 가정합니다.
 	m_Net_Data_Map.clear(); // 기존 데이터 초기화
 
@@ -496,6 +510,11 @@ void CChildView::ResetNodeData()
 
 		Road_iter++;
 	}
+
+	CString message;
+	message.Format(_T("디버그 ID: %d, %d"), m_Net_Data_Map.rbegin());
+
+	AfxMessageBox(message);
 	// m_ALLNode의 모든 노드가 맵에 키로 등록되기를 원한다면, m_Road_List 순회 후 
 	// m_ALLNode를 순회하며 맵에 없는 키를 빈 리스트로 추가하는 별도 작업이 필요합니다.
 }
@@ -608,19 +627,21 @@ list<m_Node_Status> CChildView::ConvertPathToNodeStatusList(const list<int>& sho
 	{
 		// 2. 전체 노드 목록(m_ALLNode)에서 해당 ID를 가진 노드를 찾습니다.
 		auto it_all = m_ALLNode.begin();
-		bool found = false;
+		bool found = FALSE;
 
 		while (it_all != m_ALLNode.end())
 		{
-			if (it_all->ID == nodeId)
+			if ((*it_all).ID == nodeId)
 			{
 				// 3. 일치하는 노드를 찾았을 경우
 				path_status_list.push_back(*it_all); // 해당 m_Node_Status 객체를 새 리스트에 추가
-				found = true;
+				found = TRUE;
 				break; // m_ALLNode 순회 중지
 			}
 			++it_all;
 		}
+
+
 
 		// 경로에 포함된 노드 ID가 m_ALLNode에 존재하지 않을 경우를 대비
 		if (!found)
